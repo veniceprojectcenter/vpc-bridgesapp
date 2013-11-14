@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en" ng-app>
+	<head>
+		<title>Venice Bridges</title>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+		<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.0/angular.min.js"></script>
+		<script type='text/javascript' src='https://cdn.firebase.com/v0/firebase.js'></script>
+		<script type='text/javascript' src='js/ck-console.js'></script>
+		<script type='text/javascript'>
+			var ckConsole = new CKConsole();
+			/*ckConsole.getGroup('Canals', function(group){
+				console.log(group);
+			});*/
+			ckConsole.getMap("map-56188150-7ff2-b876-e929-e396332a8417", function(map){
+				console.log(map);
+			});
+		</script>
+	</head>
+	<body>
+		<p>Nothing here {{'yet' + '!'}}</p>
+	</body>
+</html>
