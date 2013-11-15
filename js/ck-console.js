@@ -7,7 +7,7 @@ function CKConsole(){
 	this.formsRef = this.rootRef.child('forms');
 }
 
-CKConsole.prototype.getGroup = function(groupname, callback){
+CKConsole.prototype.getGroup = function(groupname, callback, statusCallback){
 	var _this = this;
 	console.log("Getting group: "+groupname);
 	this.groupsRef.child(groupname).on('value', function(groupSnapshot) {
@@ -18,6 +18,10 @@ CKConsole.prototype.getGroup = function(groupname, callback){
 				name: groupname,
 				members: members
 			});
+		},
+		function(requests, responses){
+			if(statusCallback)
+				statusCallback(requests, responses);
 		});
 	});
 }
@@ -97,7 +101,7 @@ CKConsole.prototype.getValuesAndMergeFromIds = function(baseRef, datas, processF
 	}
 }
 
-CKConsole.prototype.getValueFromKeys = function(baseRef, dataIds, callback){
+CKConsole.prototype.getValueFromKeys = function(baseRef, dataIds, callback, statusCallback){
 	var requests = 0;
 	var responses = 0;
 	
@@ -109,6 +113,8 @@ CKConsole.prototype.getValueFromKeys = function(baseRef, dataIds, callback){
 			var member = memberSnapshot.val();
 			items[member.birth_certificate.ckID] = member;
 			++responses;
+			if(statusCallback)
+				statusCallback(requests, responses);
 			if(requests == responses)
 				callback(items);
 		});

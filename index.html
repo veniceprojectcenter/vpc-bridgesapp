@@ -73,12 +73,10 @@
 						var marker = $scope.markers[id];
 						var data = canal.data.lung;
 						if(data>$scope.totalHeight){
-							if(marker.getMap()!=map)
-								marker.setMap(map);
+							marker.setOptions({fillColor: '#FF0000'});
 						}
 						else{
-							if(marker.getMap()!=null)
-								marker.setMap(null);
+							marker.setOptions({fillColor: '#00FF00'});
 						}
 					}
 				}
@@ -96,10 +94,9 @@
 				$scope.boatHeight = 100;
 				
 				
-				
-				
 				$( document ).ready(function() {
-					$('#spinner').css('background-color','rgba(0,0,0,0.5)').spin('large', '#fff');
+					$('#loadingPanel').css('background-color','rgba(0,0,0,0.5)');
+					$('#spinner').spin('large', '#fff');
 					ckConsole.getGroup('SegmentMaps', function(group){$scope.$apply(function(){
 						for(var id in group.members){
 							var member = group.members[id];
@@ -115,23 +112,36 @@
 						}
 						$scope.canals = group.members;
 						
-						$('#spinner').hide().spin(false);
+						$('#loadingPanel').hide();
+						$('#spinner').spin(false);
+					});},
+					function(requests, responses){$scope.$apply(function(){
+						$scope.numLoadingRequests = requests;
+						$scope.numLoadingResponses = responses;
+						$scope.loadingProgress = 100*responses/requests;
 					});});
 				});
 			}]);
 		</script>
 	</head>
-	<body>
+	<body ng-controller="DataCtrl">
 		<div style="position:absolute;width:100%;height:100%;">
 			<div id="map-canvas" style="width:100%;height:100%;"></div>
 		</div>
 		
-		<div style="position:absolute;bottom:0;right:0;background-color:rgba(0,0,0,0.8);padding-left:15px;padding-right:15px;padding-top:10px;width:300px;color:#ffffff;" ng-controller="DataCtrl">
-			<p><h4>Total Height: {{totalHeight}} m</h4></p>
-			<p><h5 style="margin:0px;">Water Height ({{waterHeight}} m):</h5><slider floor="0" ceiling="400" step="1" precision="0" ng-model="waterHeight"></slider></p>
-			<p><h5 style="margin:0px;">Boat Height ({{boatHeight}} m):</h5><slider floor="0" ceiling="400" step="1" precision="0" ng-model="boatHeight"></slider></p>
+		<div style="position:absolute;bottom:0;right:0;background-color:rgba(0,0,0,0.8);padding-left:15px;padding-right:15px;padding-top:10px;width:300px;color:#ffffff;">
+			<p><h4>Total Height: {{totalHeight}} cm</h4></p>
+			<p><h5 style="margin:0px;">Water Height ({{waterHeight}} cm):</h5><slider floor="-50" ceiling="200" step="1" precision="0" ng-model="waterHeight"></slider></p>
+			<p><h5 style="margin:0px;">Boat Height ({{boatHeight}} cm):</h5><slider floor="50" ceiling="400" step="1" precision="0" ng-model="boatHeight"></slider></p>
 		</div>
 		
-		<div style="position:absolute;top:0px;left:0px;width:100%;height:100%;" id="spinner"/>
+		<div style="position:absolute;top:0px;left:0px;width:100%;height:100%;" id="loadingPanel">
+			<div style="margin-left:auto;margin-right:auto;text-align:center;margin-top:50px;" id="loadingText"><h3 style="color:white;"><span ng-hide="numLoadingRequests">Loading...</span><span ng-show="numLoadingRequests">Loading {{numLoadingResponses}} of {{numLoadingRequests}}</span></h3></div>
+			<div class="progress progress-striped active" style="position:absolute;left:25%;right:25%;" ng-show="loadingProgress">
+				<div class="progress-bar" role="progressbar" style="width: {{loadingProgress}}%;-webkit-transition: none;-moz-transition: none;-ms-transition: none;-o-transition: none;transition: none;">
+				</div>
+			</div>
+			<div style="position:absolute;left:50%;top:50%;" id="spinner"/>
+		</div>
 	</body>
 </html>
