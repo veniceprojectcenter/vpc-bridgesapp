@@ -127,6 +127,9 @@ CKConsole.prototype.getValue = function(baseRef, id, callback){
 	});
 }
 
+
+
+
 CKConsoleUtil = {
 	geoJsonToGoogleMaps : function(shape, options){
 		if(shape.type=="Polygon"){

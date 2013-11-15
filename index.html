@@ -1,25 +1,36 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" ng-app="bridgeapp">
 	<head>
 		<title>Venice Bridges</title>
-		<link rel="stylesheet" type="text/css" href="css/main.css">
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+		
+		<link rel="stylesheet" type="text/css" href="css/reset.css"/>
+		
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 		<script type='text/javascript' src='https://cdn.firebase.com/v0/firebase.js'></script>
 		<script src="http://maps.googleapis.com/maps/api/js?key=AIzaSyAyOAA9mi5u_6cH_5TNoOYFIyPzT3q3mpA&sensor=false"></script>
 		<script type='text/javascript' src='js/ck-console.js'></script>
 		
-		<!-- bootstrap-->
-		<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
-		<link rel="stylesheet" type="text/css" href="css/bootstrap-theme.min.css">
+		<!-- bootstrap -->
+		<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css"/>
+		<link rel="stylesheet" type="text/css" href="css/bootstrap-theme.min.css"/>
 		<script type='text/javascript' src='js/bootstrap.min.js'></script>
 		
-		<!-- bootstrap slider-->
-		<link rel="stylesheet" type="text/css" href="css/slider.css">
-		<script type='text/javascript' src='js/bootstrap-slider.js'></script>
+		<!-- angularjs -->
+		<script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.2.0/angular.min.js"></script>
+		
+		<!-- angular slider -->
+		<link rel="stylesheet" type="text/css" href="css/angular-slider.min.css"/>
+		<script type='text/javascript' src='js/angular-slider.min.js'></script>
+		
+		<!-- spinner -->
+		<script type='text/javascript' src='js/spin.min.js'></script>
+		<script type='text/javascript' src='js/jquery.spin.js'></script>
+		
+		<!-- local css -->
+		<link rel="stylesheet" type="text/css" href="css/main.css"/>
 		
 		<script type='text/javascript'>
-			var markers = {};
-			var canals;
 			var map;
 			var ckConsole = new CKConsole();
 			
@@ -49,36 +60,19 @@
 					]
 				};
 				map = new google.maps.Map(document.getElementById("map-canvas"), mapOptions);
+			});
+			
+			app = angular.module('bridgeapp', ['uiSlider']);
+			app.controller('DataCtrl', ['$scope', function($scope){
+				$scope.markers = {};
+				$scope.canals = {};
 				
-				
-				ckConsole.getGroup('SegmentMaps', function(group){
-					for(var id in group.members){
-						var member = group.members[id];
-						console.log(member);
-						var polygon = CKConsoleUtil.geoJsonToGoogleMaps(member.shape,	{
-																							strokeColor: '#000000',
-																							strokeOpacity: 0.8,
-																							strokeWeight: 1,
-																							fillColor: '#FF0000',
-																							fillOpacity: 0.35
-																						});
-						polygon.setMap(map);
-						markers[id] = polygon;
-					}
-					canals = group.members;
-				});
-				
-				$('.slider').slider({formater:function(val){
-					return val+" m";
-				}})
-				$('.slider').on('slide', function() {
-					var waterHeight = parseInt($("#waterSlider").val());
-					var boatHeight = parseInt($("#boatSlider").val());
-					for(var id in canals){
-						var canal = canals[id];
-						var marker = markers[id];
+				function updateMarkers(){
+					for(var id in $scope.canals){
+						var canal = $scope.canals[id];
+						var marker = $scope.markers[id];
 						var data = canal.data.lung;
-						if(data<waterHeight && data>boatHeight){
+						if(data>$scope.totalHeight){
 							if(marker.getMap()!=map)
 								marker.setMap(map);
 						}
@@ -87,19 +81,57 @@
 								marker.setMap(null);
 						}
 					}
-				});
+				}
+				$scope.$watch('totalHeight', updateMarkers);
+				$scope.$watchCollection('markers', updateMarkers);
+
+				function updateTotal(){
+					$scope.totalHeight = $scope.waterHeight*1 + $scope.boatHeight*1;
+				}
 				
-			});
+				$scope.$watch('waterHeight', updateTotal);
+				$scope.$watch('boatHeight', updateTotal);
+				
+				$scope.waterHeight = 0;
+				$scope.boatHeight = 100;
+				
+				
+				
+				
+				$( document ).ready(function() {
+					$('#spinner').css('background-color','rgba(0,0,0,0.5)').spin('large', '#fff');
+					ckConsole.getGroup('SegmentMaps', function(group){$scope.$apply(function(){
+						for(var id in group.members){
+							var member = group.members[id];
+							var polygon = CKConsoleUtil.geoJsonToGoogleMaps(member.shape,	{
+																								strokeColor: '#000000',
+																								strokeOpacity: 0.8,
+																								strokeWeight: 1,
+																								fillColor: '#FF0000',
+																								fillOpacity: 0.35
+																							});
+							polygon.setMap(map);
+							$scope.markers[id] = polygon;
+						}
+						$scope.canals = group.members;
+						
+						$('#spinner').hide().spin(false);
+					});});
+				});
+			}]);
 		</script>
 	</head>
 	<body>
-		<div style="width:100%;height:100%;">
-			<div id="map-canvas" style="width:100%;height:100%;"/>
+		<div style="position:absolute;width:100%;height:100%;">
+			<div id="map-canvas" style="width:100%;height:100%;"></div>
 		</div>
 		
-		<div style="position:absolute;bottom:0;right:0;background-color:rgba(255,255,255,0.3);padding:15px;">
-			<input id="waterSlider" class="slider" type="text" value="" data-slider-min="0" data-slider-max="400" data-slider-step="1" data-slider-value="400" data-slider-orientation="vertical" data-slider-tooltip="hide" style="margin:10px;"/>
-			<input id="boatSlider" class="slider" type="text" value="" data-slider-min="0" data-slider-max="400" data-slider-step="1" data-slider-value="0" data-slider-orientation="vertical" data-slider-tooltip="hide" style="margin:10px;"/>
+		<div style="position:absolute;bottom:0;right:0;background-color:rgba(0,0,0,0.8);padding-left:15px;padding-right:15px;padding-top:10px;width:300px;color:#ffffff;" ng-controller="DataCtrl">
+			<p><h4>Total Height: {{totalHeight}} m</h4></p>
+			<p><h5 style="margin:0px;">Water Height ({{waterHeight}} m):</h5><slider floor="0" ceiling="400" step="1" precision="0" ng-model="waterHeight"></slider></p>
+			<p><h5 style="margin:0px;">Boat Height ({{boatHeight}} m):</h5><slider floor="0" ceiling="400" step="1" precision="0" ng-model="boatHeight"></slider></p>
 		</div>
+		
+		<div style="position:absolute;top:0px;left:0px;width:100%;height:100%;" id="spinner"/>
 	</body>
 </html>
