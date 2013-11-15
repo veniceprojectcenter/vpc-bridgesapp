@@ -126,3 +126,20 @@ CKConsole.prototype.getValue = function(baseRef, id, callback){
 		callback(snapshot.val());
 	});
 }
+
+CKConsoleUtil = {
+	geoJsonToGoogleMaps : function(shape, options){
+		if(shape.type=="Polygon"){
+			var coords = shape.coordinates[0];
+			var googleCoords = new Array();
+			for(var i = 0; i<coords.length; ++i){
+				var coord = coords[i];
+				googleCoords.push(new google.maps.LatLng(coord[1], coord[0]));
+			}
+			
+			return new google.maps.Polygon(jQuery.extend({paths: googleCoords}, options));
+		}
+		else
+			console.error("Unknown shape:", shape);
+	}
+}
