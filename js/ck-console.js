@@ -10,7 +10,7 @@ function CKConsole(){
 CKConsole.prototype.getGroup = function(groupname, callback, statusCallback){
 	var _this = this;
 	console.log("Getting group: "+groupname);
-	this.groupsRef.child(groupname).on('value', function(groupSnapshot) {
+	this.groupsRef.child(groupname).once('value', function(groupSnapshot) {
 		var groupData = groupSnapshot.val();
 		
 		_this.getValueFromKeys(_this.dataRef, groupData.members, function(members){
@@ -109,7 +109,7 @@ CKConsole.prototype.getValueFromKeys = function(baseRef, dataIds, callback, stat
 	
 	for (id in dataIds) {
 		++requests;
-		baseRef.child(id).on('value', function(memberSnapshot) {
+		baseRef.child(id).once('value', function(memberSnapshot) {
 			var member = memberSnapshot.val();
 			items[member.birth_certificate.ckID] = member;
 			++responses;
@@ -128,7 +128,7 @@ CKConsole.prototype.getValueAndMergeFromId = function(baseRef, data, callback){
 	});
 }
 CKConsole.prototype.getValue = function(baseRef, id, callback){
-	baseRef.child(id).on('value', function(snapshot) {
+	baseRef.child(id).once('value', function(snapshot) {
 		callback(snapshot.val());
 	});
 }

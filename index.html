@@ -30,6 +30,16 @@
 		<!-- local css -->
 		<link rel="stylesheet" type="text/css" href="css/main.css"/>
 		
+		
+		<style type="text/css">
+			/* fix for slider conflict with bootstrap */
+			slider span{
+				-webkit-box-sizing: content-box !important;
+				-moz-box-sizing: content-box !important;
+				box-sizing: content-box !important;
+			}
+		</style>
+		
 		<script type='text/javascript'>
 			var map;
 			var ckConsole = new CKConsole();
@@ -73,10 +83,10 @@
 						var marker = $scope.markers[id];
 						var data = canal.data.lung;
 						if(data>$scope.totalHeight){
-							marker.setOptions({fillColor: '#FF0000'});
+							marker.setOptions({fillColor: '#FF0000',strokeColor: '#FF0000'});
 						}
 						else{
-							marker.setOptions({fillColor: '#00FF00'});
+							marker.setOptions({fillColor: '#00FF00',strokeColor: '#00FF00'});
 						}
 					}
 				}
@@ -97,15 +107,15 @@
 				$( document ).ready(function() {
 					$('#loadingPanel').css('background-color','rgba(0,0,0,0.5)');
 					$('#spinner').spin('large', '#fff');
-					ckConsole.getGroup('SegmentMaps', function(group){$scope.$apply(function(){
+					ckConsole.getGroup('MAPS Canal Segments', function(group){$scope.$apply(function(){
 						for(var id in group.members){
 							var member = group.members[id];
 							var polygon = CKConsoleUtil.geoJsonToGoogleMaps(member.shape,	{
 																								strokeColor: '#000000',
-																								strokeOpacity: 0.8,
-																								strokeWeight: 1,
+																								strokeOpacity: 1,
+																								strokeWeight: 10,
 																								fillColor: '#FF0000',
-																								fillOpacity: 0.35
+																								fillOpacity: 1
 																							});
 							polygon.setMap(map);
 							$scope.markers[id] = polygon;
@@ -129,7 +139,7 @@
 			<div id="map-canvas" style="width:100%;height:100%;"></div>
 		</div>
 		
-		<div style="position:absolute;bottom:0;right:0;background-color:rgba(0,0,0,0.8);padding-left:15px;padding-right:15px;padding-top:10px;width:300px;color:#ffffff;">
+		<div style="position:absolute;bottom:15px;right:10px;background-color:rgba(0,0,0,0.8);padding-left:15px;padding-right:15px;padding-top:10px;width:300px;color:#ffffff;">
 			<p><h4>Total Height: {{totalHeight}} cm</h4></p>
 			<p><h5 style="margin:0px;">Water Height ({{waterHeight}} cm):</h5><slider floor="-50" ceiling="200" step="1" precision="0" ng-model="waterHeight"></slider></p>
 			<p><h5 style="margin:0px;">Boat Height ({{boatHeight}} cm):</h5><slider floor="50" ceiling="400" step="1" precision="0" ng-model="boatHeight"></slider></p>
@@ -137,7 +147,7 @@
 		
 		<div style="position:absolute;top:0px;left:0px;width:100%;height:100%;" id="loadingPanel">
 			<div style="margin-left:auto;margin-right:auto;text-align:center;margin-top:50px;" id="loadingText"><h3 style="color:white;"><span ng-hide="numLoadingRequests">Loading...</span><span ng-show="numLoadingRequests">Loading {{numLoadingResponses}} of {{numLoadingRequests}}</span></h3></div>
-			<div class="progress progress-striped active" style="position:absolute;left:25%;right:25%;" ng-show="loadingProgress">
+			<div class="progress" style="position:absolute;left:25%;right:25%;" ng-show="loadingProgress">
 				<div class="progress-bar" role="progressbar" style="width: {{loadingProgress}}%;-webkit-transition: none;-moz-transition: none;-ms-transition: none;-o-transition: none;transition: none;">
 				</div>
 			</div>
