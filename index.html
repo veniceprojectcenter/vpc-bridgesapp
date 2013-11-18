@@ -6,10 +6,19 @@
 		
 		<link rel="stylesheet" type="text/css" href="css/reset.css"/>
 		
-		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+		
+		<!-- Firebase -->
 		<script type='text/javascript' src='https://cdn.firebase.com/v0/firebase.js'></script>
-		<script src="http://maps.googleapis.com/maps/api/js?key=AIzaSyAyOAA9mi5u_6cH_5TNoOYFIyPzT3q3mpA&sensor=false"></script>
+		
+		<!-- jquery -->
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+		
+		<!-- console library -->
 		<script type='text/javascript' src='js/ck-console.js'></script>
+		
+		<!-- Leaflet -->
+		<script src="http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.js"></script>
+		<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.css" />
 		
 		<!-- bootstrap -->
 		<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css"/>
@@ -38,60 +47,56 @@
 				-moz-box-sizing: content-box !important;
 				box-sizing: content-box !important;
 			}
+			
+			.info {
+				padding: 6px 8px;
+				font: 14px/16px Arial, Helvetica, sans-serif;
+				background: white;
+				background: rgba(255,255,255,0.9);
+				box-shadow: 0 0 15px rgba(0,0,0,0.2);
+				border-radius: 5px;
+				width: 320px;
+			}
+			.info h4 {
+				margin: 0 0 5px;
+				color: #777;
+			}
 		</style>
 		
 		<script type='text/javascript'>
-			var map;
 			var ckConsole = new CKConsole();
 			
+			var map;
+			var baseLayer;
+			
 			$( document ).ready(function() {
-				var mapOptions = {
-					center: new google.maps.LatLng(45.436 , 12.334),
-					zoom: 14,
-					panControl: false,
-					zoomControl: false,
-					streetViewControl: false,
-					mapTypeId: google.maps.MapTypeId.ROADMAP,
-					styles: [
-						{
-							"featureType": "poi",
-							"elementType": "labels",
-							"stylers": [
-								{ "visibility": "off" }
-							]
-						},
-						{
-							"featureType": "landscape.man_made",
-							"elementType": "geometry",
-							"stylers": [
-								{ "visibility": "off" }
-							]
-						}
-					]
-				};
-				map = new google.maps.Map(document.getElementById("map-canvas"), mapOptions);
+				map = L.map("map-canvas", {minZoom: 14}).setView([45.436 , 12.334], 14);
+				baseLayer = new L.TileLayer(
+					'http://{s}.tiles.mapbox.com/v3/bennlich.map-8ds9rdrc/{z}/{x}/{y}.png',
+					{ attribution: 'Map tiles © MapBox' }
+					).addTo(map);
+				L.control.scale().addTo(map);
 			});
 			
 			app = angular.module('bridgeapp', ['uiSlider']);
-			app.controller('DataCtrl', ['$scope', function($scope){
-				$scope.markers = {};
-				$scope.canals = {};
-				
+			app.controller('DataCtrl', ['$scope', '$compile', function($scope, $compile){
 				function updateMarkers(){
-					for(var id in $scope.canals){
-						var canal = $scope.canals[id];
-						var marker = $scope.markers[id];
-						var data = canal.data.lung;
-						if(data>$scope.totalHeight){
-							marker.setOptions({fillColor: '#FF0000',strokeColor: '#FF0000'});
-						}
-						else{
-							marker.setOptions({fillColor: '#00FF00',strokeColor: '#00FF00'});
-						}
+					if($scope.bridgeLayer){
+						$scope.bridgeLayer.eachMember(function(member, marker){
+							if(marker){
+								var data = member.data.Superficie;
+								if(data>$scope.totalHeight){
+									marker.setStyle({fillColor: '#FF0000',color: '#FF0000'});
+								}
+								else{
+									marker.setStyle({fillColor: '#00FF00',color: '#00FF00'});
+								}
+							}
+						});
 					}
 				}
 				$scope.$watch('totalHeight', updateMarkers);
-				$scope.$watchCollection('markers', updateMarkers);
+				$scope.$watchCollection('bridgeLayer', updateMarkers);
 
 				function updateTotal(){
 					$scope.totalHeight = $scope.waterHeight*1 + $scope.boatHeight*1;
@@ -103,32 +108,46 @@
 				$scope.waterHeight = 0;
 				$scope.boatHeight = 100;
 				
+				$scope.hoverFields = [
+					{label: "ID", key: "Codice_Pon"},
+					{label: "Name", key: "Nome_Ponte"},
+					{label: "River Name", key: "Nome_Rio"},
+					{label: "Area", key: "Superficie"}
+				];
 				
 				$( document ).ready(function() {
+					var info = L.control();
+					info.onAdd = function (map) {
+						var htmlContent = '<div class="info"><h4>Bridge Information</h4>'+
+							'<p ng-show="hoverData.data"><span ng-repeat="fieldRow in hoverFields" style="display:block" ng-show="hoverData.data[fieldRow.key]"><span style="font-weight:bold;">{{fieldRow.label}}:</span> {{hoverData.data[fieldRow.key]}}</span></p>'+
+							'<p ng-hide="hoverData.data">Hover over a bridge to see more information</p>'+
+							'</div>';
+						$scope.compiled = $compile(htmlContent)($scope);
+						this._content = $scope.compiled[0];
+						return this._content;
+					};
+					info.addTo(map);
+
 					$('#loadingPanel').css('background-color','rgba(0,0,0,0.5)');
 					$('#spinner').spin('large', '#fff');
-					ckConsole.getGroup('MAPS Canal Segments', function(group){$scope.$apply(function(){
-						for(var id in group.members){
-							var member = group.members[id];
-							var polygon = CKConsoleUtil.geoJsonToGoogleMaps(member.shape,	{
-																								strokeColor: '#000000',
-																								strokeOpacity: 1,
-																								strokeWeight: 10,
-																								fillColor: '#FF0000',
-																								fillOpacity: 1
-																							});
-							polygon.setMap(map);
-							$scope.markers[id] = polygon;
-						}
-						$scope.canals = group.members;
+					
+					ckConsole.getGroup('MAPS Bridges').get(function(bridgeData){$scope.$apply(function(){
+						$scope.bridgeLayer = CKConsoleUtil.createMapLayerFromGroupData(map, bridgeData).show();
+						
+						$scope.bridgeLayer.setStyle({fillColor: '#0000FF',color: '#0000FF',
+							fillOpacity: 1.0, weight: 15, opacity: 1.0});
+						
+						$scope.bridgeLayer.on('mouseover', function(e, data){$scope.$apply(function(){
+							$scope.hoverData = data;
+							console.log($scope.hoverData);
+						});});
+						$scope.bridgeLayer.on('mouseout', function(e, data){$scope.$apply(function(){
+							if($scope.hoverData == data)
+								$scope.hoverData = null;
+						});});
 						
 						$('#loadingPanel').hide();
 						$('#spinner').spin(false);
-					});},
-					function(requests, responses){$scope.$apply(function(){
-						$scope.numLoadingRequests = requests;
-						$scope.numLoadingResponses = responses;
-						$scope.loadingProgress = 100*responses/requests;
 					});});
 				});
 			}]);
@@ -145,12 +164,8 @@
 			<p><h5 style="margin:0px;">Boat Height ({{boatHeight}} cm):</h5><slider floor="50" ceiling="400" step="1" precision="0" ng-model="boatHeight"></slider></p>
 		</div>
 		
-		<div style="position:absolute;top:0px;left:0px;width:100%;height:100%;" id="loadingPanel">
-			<div style="margin-left:auto;margin-right:auto;text-align:center;margin-top:50px;" id="loadingText"><h3 style="color:white;"><span ng-hide="numLoadingRequests">Loading...</span><span ng-show="numLoadingRequests">Loading {{numLoadingResponses}} of {{numLoadingRequests}}</span></h3></div>
-			<div class="progress" style="position:absolute;left:25%;right:25%;" ng-show="loadingProgress">
-				<div class="progress-bar" role="progressbar" style="width: {{loadingProgress}}%;-webkit-transition: none;-moz-transition: none;-ms-transition: none;-o-transition: none;transition: none;">
-				</div>
-			</div>
+		<div style="position:absolute;top:0px;left:0px;width:100%;height:100%;z-index:2000;" id="loadingPanel">
+			<div style="margin-left:auto;margin-right:auto;text-align:center;margin-top:50px;" id="loadingText"><h3 style="color:white;">Loading...</h3></div>
 			<div style="position:absolute;left:50%;top:50%;" id="spinner"/>
 		</div>
 	</body>
