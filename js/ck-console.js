@@ -24,20 +24,23 @@ angular.module('ckServices', [])
 			if(this.groups[groupname]){
 				console.log("Getting cached version of group: "+groupname);
 				
-				var deferred = $q.defer();
-				deferred.resolve(this.groups[groupname]);
-				return deferred.promise;
+				return $q.when(this.groups[groupname]);
 			}
 			else{
+				var deferred = $q.defer();
 				console.log("Getting group: "+groupname);
-				return this.groups[groupname] = this.getValue(this.groupsRef, groupname).then(function(groupData) {
+				this.getValue(this.groupsRef, groupname).then(function(groupData) {
+					deferred.notify({type: 'groupData', groupData: groupData});
 					return _this.getValueFromKeys(_this.dataRef, groupData.members).then(function(members){
-						return {
+						deferred.resolve({
 							groupname: groupname,
 							members: members
-						};
+						});
+					}, undefined, function(notification){
+						deferred.notify({type: 'newMember', groupData: groupData, memberId: notification.key, member: notification.value});
 					});
 				});
+				return this.groups[groupname] = deferred.promise;
 			}
 		}
 
@@ -52,10 +55,8 @@ angular.module('ckServices', [])
 			
 			if(this.maps[mapId]){
 				console.log("Getting cached version of map: "+mapId);
-				
-				var deferred = $q.defer();
-				deferred.resolve(this.maps[mapId]);
-				return deferred.promise;
+
+				return $q.when(this.maps[mapId]);
 			}
 			else{
 				console.log("Getting map: "+mapId);
@@ -79,6 +80,7 @@ angular.module('ckServices', [])
 								}
 								if(fetchGroups){
 									layerProcessActions.push(_this.getGroup(layerData.groupname).then(function(groupData){
+										console.log(groupData);
 										layerData.members = groupData.members;
 									}));
 								}
@@ -93,8 +95,6 @@ angular.module('ckServices', [])
 						return map;
 					});
 				});
-				
-				return result;
 			}
 		}
 
@@ -102,20 +102,40 @@ angular.module('ckServices', [])
 			
 
 		this.getValuesAndMergeFromIds = function(baseRef, datas){
+			var deferred = $q.defer();
+			
 			var asyncItems = {};
 			for (key in datas) {
 				var data = datas[key];
-				asyncItems[key] = this.getValueAndMergeFromId(baseRef, data);
+				asyncItems[key] = this.getValueAndMergeFromId(baseRef, data).then((function(idCapture){return function(val){
+					deferred.notify({key: idCapture, value: val});
+					return val;
+				};})(id));
 			}
-			return $q.all(asyncItems);
+			
+			$q.all(asyncItems).then(function(result){
+				deferred.resolve(result);
+			});
+			
+			return deferred.promise;
 		}
 
 		this.getValueFromKeys = function(baseRef, dataIds){
+			var deferred = $q.defer();
+			
 			var asyncItems = {};
 			for (var id in dataIds) {
-				asyncItems[id] = this.getValue(baseRef, id);
+				asyncItems[id] = this.getValue(baseRef, id).then((function(idCapture){return function(val){
+					deferred.notify({key: idCapture, value: val});
+					return val;
+				};})(id));
 			}
-			return $q.all(asyncItems);
+			
+			$q.all(asyncItems).then(function(result){
+				deferred.resolve(result);
+			});
+			
+			return deferred.promise;
 		}
 
 		this.getValueAndMergeFromId = function(baseRef, data, callback){
@@ -133,12 +153,12 @@ angular.module('ckServices', [])
 			var ref = baseRef.child(id);
 			
 			var cachedObject = localStorage.getItem(ref.toString());
+			//cachedObject = null; //TODO use this to disable caching
 			if(cachedObject){
 				deferred.resolve(JSON.parse(cachedObject));
 			}
 			else{
 				++total;
-				var value = new AsyncValue();
 				ref.once('value', function(snapshot) {
 					++i;
 					console.info("Response: "+i+"/"+total, ref.toString());
@@ -152,8 +172,14 @@ angular.module('ckServices', [])
 			return deferred.promise;
 		}
 	}])
+	
+	
+	
+/*******************************************
+  CKConsole Map service
+********************************************/
 	.service('$ckConsoleMap', ['$rootScope', '$q', '$ckConsole', function($rootScope, $q, $ckConsole) {
-		this.createMapLayersFromMapData = function(map, mapData){
+		/*this.createMapLayersFromMapData = function(map, mapData){
 			var _this = this;
 			var layers = {};
 			for(var id in mapData.layers){
@@ -165,28 +191,53 @@ angular.module('ckServices', [])
 				layers[groupname] = mapLayer;
 			}
 			return layers;
-		};
+		};*/
 		
-		this.createMapLayerFromGroupData = function(map, groupData, memberLayerFactory){
+		this.createMapLayerFromGroupData = function(map, groupPromise, createCallback, memberLayerFactory){
 			if(!memberLayerFactory){
-				memberLayerFactory = this.createGroupMemberLayer;
+				memberLayerFactory = function(member){return _this.createGroupMemberLayer(member);};
 			}
-			var markers = {};
-			for(var id in groupData.members){
-				var member = groupData.members[id];
+			
+			var _this = this;
+			var deferred = $q.defer();
+			var layer;
+			
+			function createLayerIfNeeded(groupname){
+				if(!layer){
+					layer = new MapGroupLayer(map, groupname);
+					createCallback(layer);
+				}
+			}
+			function createMemberLayer(id, member){
 				var mapObject = memberLayerFactory(member);
-				if(mapObject)
-					markers[id] = mapObject;
+				layer.addMember(id, member, mapObject);
 			}
-			return new MapGroupLayer(map, groupData, markers);
+			
+			groupPromise.then(function(groupData){
+				createLayerIfNeeded(groupData.groupname);
+				for(var id in groupData.members){//create all remaining members if needed
+					if(!layer.getMember(id)){
+						createMemberLayer(id, groupData.members[id]);
+					}
+				};
+				deferred.resolve(layer);
+			}, undefined, function(notification){
+				createLayerIfNeeded(notification.groupData.groupname);
+				if(notification.type=='newMember')
+					createMemberLayer(notification.memberId, notification.member);
+			});
+			
+			return deferred.promise;
 		};
 		
 		this.createGroupMemberLayer = function(member, symbolUrl){
+			if(!member)
+				return;
 			var layer = this.createGroupMemberShape(member);
 			if(layer)
 				return layer;
 				
-			var layer = this.createGroupMemberMarker(member, symbolUrl);
+			layer = this.createGroupMemberMarker(member, symbolUrl);
 			if(layer)
 				return layer;
 		};
@@ -230,15 +281,35 @@ angular.module('ckServices', [])
 /*******************************************
   MapGroupLayer class
 ********************************************/
-function MapGroupLayer(map, groupData, markers){
-	this.groupData = groupData;
-	this.markers = markers;
+function MapGroupLayer(map, groupname){
+	this.groupname = groupname;
 	this.map = map;
+	this.groupMembers = {};
+	this.markers = {};
 	this.featureGroup = new L.FeatureGroup();
 	for(var id in this.markers){
 		var marker = this.markers[id];
 		this.featureGroup.addLayer(marker);
 	}
+}
+MapGroupLayer.prototype.addMember = function(id, member, marker){
+	this.groupMembers[id] = member;
+	this.markers[id] = marker;
+	if(this.style)
+		marker.setStyle(this.style);
+	this.featureGroup.addLayer(marker);
+	return this;
+}
+MapGroupLayer.prototype.getMember = function(id){
+	return this.groupMembers[id];
+}
+MapGroupLayer.prototype.setStyle = function(style){
+	for(var id in this.markers){
+		var marker = this.markers[id];
+		marker.setStyle(style);
+	}
+	this.style = style;
+	return this;
 }
 MapGroupLayer.prototype.show = function(){
 	this.map.addLayer(this.featureGroup);
@@ -250,28 +321,32 @@ MapGroupLayer.prototype.hide = function(){
 }
 MapGroupLayer.prototype.on = function(eventName, callback){
 	var _this = this;
-	for(var id in this.markers){
-		(function(marker, member){
-		marker.on(eventName, function(e){
-			callback(e, member);
-		});})(this.markers[id], this.groupData.members[id])
-	}
-	
+	this.featureGroup.on(eventName, function(e){
+		for(var id in _this.markers){
+			var marker = _this.markers[id];
+			var member = _this.groupMembers[id];
+			if(marker==e.layer){
+				callback(e, member, marker);
+				return;
+			}
+			for(var markerId in marker._layers){
+				var marker = marker._layers[markerId];
+				if(marker==e.layer){
+					callback(e, member, marker);
+					return;
+				}
+			}
+		}
+		console.warning("event on feature group did not convert to marker", e, _this.markers);
+	});
 	return this;
 }
 MapGroupLayer.prototype.getLayer = function(){
 	return this.featureGroup;
 }
-MapGroupLayer.prototype.setStyle = function(options){
-	for(var id in this.markers){
-		var marker = this.markers[id];
-		marker.setStyle(options);
-	}
-	return this;
-}
 MapGroupLayer.prototype.eachMember = function(callback){
-	for(var id in this.groupData.members){
-		var member = this.groupData.members[id];
+	for(var id in this.groupMembers){
+		var member = this.groupMembers[id];
 		var marker = this.markers[id];
 		callback(member, marker);
 	}
