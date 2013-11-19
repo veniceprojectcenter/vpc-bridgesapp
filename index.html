@@ -13,9 +13,6 @@
 		<!-- jquery -->
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 		
-		<!-- console library -->
-		<script type='text/javascript' src='js/ck-console.js'></script>
-		
 		<!-- Leaflet -->
 		<script src="http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.js"></script>
 		<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.css" />
@@ -38,6 +35,9 @@
 		
 		<!-- local css -->
 		<link rel="stylesheet" type="text/css" href="css/main.css"/>
+		
+		<!-- console library -->
+		<script type='text/javascript' src='js/ck-console.js'></script>
 		
 		
 		<style type="text/css">
@@ -64,8 +64,6 @@
 		</style>
 		
 		<script type='text/javascript'>
-			var ckConsole = new CKConsole();
-			
 			var map;
 			var baseLayer;
 			
@@ -78,8 +76,8 @@
 				L.control.scale().addTo(map);
 			});
 			
-			app = angular.module('bridgeapp', ['uiSlider']);
-			app.controller('DataCtrl', ['$scope', '$compile', function($scope, $compile){
+			app = angular.module('bridgeapp', ['uiSlider', 'ckServices']);
+			app.controller('DataCtrl', ['$scope', '$compile', '$ckConsole', '$ckConsoleMap', function($scope, $compile, $ckConsole, $ckConsoleMap){
 				function updateMarkers(){
 					if($scope.bridgeLayer){
 						$scope.bridgeLayer.eachMember(function(member, marker){
@@ -151,15 +149,14 @@
 					$('#loadingPanel').css('background-color','rgba(0,0,0,0.5)');
 					$('#spinner').spin('large', '#fff');
 					
-					ckConsole.getGroup('MAPS Bridges').get(function(bridgeData){$scope.$apply(function(){
-						$scope.bridgeLayer = CKConsoleUtil.createMapLayerFromGroupData(map, bridgeData).show();
-						
+					$ckConsole.getGroup('MAPS Bridges').then(function(bridgeData){
+						$scope.bridgeLayer = $ckConsoleMap.createMapLayerFromGroupData(map, bridgeData).show();
+						console.log($scope.bridgeLayer);
 						$scope.bridgeLayer.setStyle({fillColor: '#0000FF',color: '#0000FF',
 							fillOpacity: 1.0, weight: 15, opacity: 1.0});
 						
 						$scope.bridgeLayer.on('mouseover', function(e, data){$scope.$apply(function(){
 							$scope.hoverData = data;
-							console.log($scope.hoverData);
 						});});
 						$scope.bridgeLayer.on('mouseout', function(e, data){$scope.$apply(function(){
 							if($scope.hoverData == data)
@@ -168,7 +165,10 @@
 						
 						$('#loadingPanel').hide();
 						$('#spinner').spin(false);
-					});});
+					});
+					$ckConsole.getMap('map-11c8209d-8061-f128-b846-e24294685595', true).then(function(mapData){
+						console.log(mapData);
+					});
 				});
 			}]);
 		</script>
