@@ -77,7 +77,7 @@
 			});
 			
 			app = angular.module('bridgeapp', ['uiSlider', 'ckServices']);
-			app.controller('DataCtrl', ['$scope', '$compile', '$ckConsole', '$ckConsoleMap', function($scope, $compile, $ckConsole, $ckConsoleMap){
+			app.controller('DataCtrl', ['$scope', '$compile', 'ckConsole', 'ckConsoleMap', function($scope, $compile, ckConsole, ckConsoleMap){
 				function updateMarkers(){
 					if($scope.bridgeLayer){
 						$scope.bridgeLayer.eachMember(function(member, marker){
@@ -148,7 +148,7 @@
 
 					$('#spinner').spin('large', '#fff');
 					
-					 $ckConsoleMap.createMapLayerFromGroupData(map, $ckConsole.getGroup('MAPS Bridges'), function(bridgeLayer){
+					 ckConsoleMap.createMapLayerFromGroupData(map, ckConsole.getGroup('MAPS Bridges'), function(bridgeLayer){
 						bridgeLayer.show();
 						bridgeLayer.setStyle({fillColor: '#0000FF',color: '#0000FF',
 							fillOpacity: 1.0, weight: 15, opacity: 1.0});
