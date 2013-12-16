@@ -240,29 +240,15 @@ angular.module('ckServices', [])
 			});
 		}
 
-		var i = 0;
-		var total = 0;
 		this.getValue = function(baseRef, id){
 			var deferred = $q.defer();
 			
 			var ref = baseRef.child(id);
-			
-			var cachedObject = localStorage.getItem(ref.toString());
-			//cachedObject = null; //TODO use this to disable caching
-			if(cachedObject){
-				deferred.resolve(JSON.parse(cachedObject));
-			}
-			else{
-				++total;
-				ref.once('value', function(snapshot) {
-					++i;
-					//console.info("Response: "+i+"/"+total, ref.toString());
-					
-					var result = snapshot.val();
-					localStorage.setItem(ref.toString(), JSON.stringify(result));
-					deferred.resolve(result);
-				});
-			}
+
+			ref.once('value', function(snapshot) {
+				var result = snapshot.val();
+				deferred.resolve(result);
+			});
 			
 			return deferred.promise;
 		}
@@ -278,13 +264,23 @@ angular.module('ckServices', [])
 			if(!item)
 				return resultFields;
 			if(form){
-				for(propertyGroupId in form.permissions){
-					var propertyGroup = form.permissions[propertyGroupId];
-					for(propertyId in propertyGroup){
-						var formPropertySpec = propertyGroup[propertyId];
-						var value = item[propertyGroupId][propertyId];
-						if(formPropertySpec.read && !(value instanceof Object))
-							resultFields[propertyId] = value;
+				if(form.content){
+					for(i in form.content){
+						var formPropertySpec = form.content[i];
+						var value = item[formPropertySpec.subdir][formPropertySpec.key];
+						if(formPropertySpec.type=="text")
+							resultFields[formPropertySpec.title] = value;
+					}
+				}
+				else{
+					for(propertyGroupId in form.permissions){
+						var propertyGroup = form.permissions[propertyGroupId];
+						for(propertyId in propertyGroup){
+							var formPropertySpec = propertyGroup[propertyId];
+							var value = item[propertyGroupId][propertyId];
+							if(formPropertySpec.read && !(value instanceof Object))
+								resultFields[propertyId] = value;
+						}
 					}
 				}
 			}
@@ -313,14 +309,26 @@ angular.module('ckServices', [])
 			if(!item)
 				return items;
 			if(form){
-				for(propertyGroupId in form.permissions){
-					var propertyGroup = form.permissions[propertyGroupId];
-					for(propertyId in propertyGroup){
-						var formPropertySpec = propertyGroup[propertyId];
-						var value = item[propertyGroupId][propertyId];
-						if(formPropertySpec.read && value instanceof Object){
+				if(form.content){
+					for(i in form.content){
+						var formPropertySpec = form.content[i];
+						var value = item[formPropertySpec.subdir][formPropertySpec.key];
+						if(formPropertySpec.type=="subdir"){
 							for(subitemId in value)
 								items.push(value[subitemId]);
+						}
+					}
+				}
+				else{
+					for(propertyGroupId in form.permissions){
+						var propertyGroup = form.permissions[propertyGroupId];
+						for(propertyId in propertyGroup){
+							var formPropertySpec = propertyGroup[propertyId];
+							var value = item[propertyGroupId][propertyId];
+							if(formPropertySpec.read && value instanceof Object){
+								for(subitemId in value)
+									items.push(value[subitemId]);
+							}
 						}
 					}
 				}
@@ -358,6 +366,8 @@ angular.module('ckServices', [])
 							layer.show();
 						if(createCallback)
 							createCallback(layerData.groupname, layer);
+					}, function(member){
+						return _this.createGroupMemberLayer(member, layerData.symbolUrl);
 					});
 				}
 			}
