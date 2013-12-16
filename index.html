@@ -82,13 +82,17 @@
 					if($scope.bridgeLayer){
 						$scope.bridgeLayer.eachMember(function(member, marker){
 							if(marker){
-								var data = member.data["Freccia Minima"]*100;
-								if(data>$scope.totalHeight){
-									marker.setStyle({fillColor: '#00FF00',color: '#00FF00'});
+								if(member && member.data){
+									var data = member.data["Minimum Height (m)"]*100;
+									if(data>$scope.totalHeight){
+										marker.setStyle({fillColor: '#00FF00',color: '#00FF00'});
+									}
+									else{
+										marker.setStyle({fillColor: '#FF0000',color: '#FF0000'});
+									}
 								}
-								else{
-									marker.setStyle({fillColor: '#FF0000',color: '#FF0000'});
-								}
+								else
+									marker.setStyle({fillOpacity: 0, weight: 0});
 							}
 						});
 					}
@@ -112,19 +116,11 @@
 						}
 					});
 				
-				$scope.hoverFields = [
-					{label: "ID", key: "Codice_Pon"},
-					{label: "River Name", key: "Nome_Rio"},
-					{label: "Area", key: "Superficie"},
-					{label: "Name", key: "Nome Ponte"},
-					{label: "Minimum Height", key: "Freccia Minima"},
-				];
-				
 				function createBridgeInfoBox(){
 					var info = L.control();
 					info.onAdd = function (map) {
 						var htmlContent = '<div class="info"><h4>Bridge Information</h4>'+
-							'<p ng-show="hoverData.data"><span ng-repeat="fieldRow in hoverFields" style="display:block" ng-show="hoverData.data[fieldRow.key]"><span style="font-weight:bold;">{{fieldRow.label}}:</span> {{hoverData.data[fieldRow.key]}}</span></p>'+
+							'<p ng-show="hoverData.data"><span ng-repeat="(name, value) in hoverData | displayForm:form" style="display:block" ng-show="value"><span style="font-weight:bold;">{{name}}:</span> {{value}}</span></p>'+
 							'<p ng-hide="hoverData.data">Hover over a bridge to see more information</p>'+
 							'</div>';
 						$scope.compiled = $compile(htmlContent)($scope);
@@ -155,8 +151,8 @@
 
 					$('#spinner').spin('large', '#fff');
 					
-					ckConsole.getGroup('MERGE Ponti').then(function(data){
-						console.log(data);
+					ckConsole.getForm('9c2102ab-e8e2-e500-b72f-49aeb4f06c1a').then(function(form){
+						$scope.form = form;
 					});
 					ckConsoleMap.createMapLayerFromGroupData(map, ckConsole.getGroup('MERGE Ponti'), function(bridgeLayer){
 						bridgeLayer.show();
