@@ -4,7 +4,20 @@ angular.module('ckServices', [])
   CKConsole service
 ********************************************/
 	.service('ckConsole', ['$rootScope', '$q', function($rootScope, $q) {
-		this.rootRef = new Firebase('http://cityknowledge.firebaseio.com');
+		
+		var firebaseConfig = {
+	    apiKey: "AIzaSyC6NAfPU1NV6QJcqL4sg4VJGa9S7nVXP4Q",
+	    authDomain: "cityknowledge.firebaseapp.com",
+	    databaseURL: "https://cityknowledge.firebaseio.com",
+	    projectId: "firebase-cityknowledge",
+	    storageBucket: "firebase-cityknowledge.appspot.com",
+	    messagingSenderId: "445655714967",
+	    appId: "1:445655714967:web:31ef94365a09cc54"
+	  };
+  	// Initialize Firebase
+  	firebase.initializeApp(firebaseConfig);
+  	
+  	this.rootRef = firebase.database().ref("/")//new Firebase('http://cityknowledge.firebaseio.com');
 		this.groupsRef = this.rootRef.child('groups');
 		this.mapsRef = this.rootRef.child('maps');
 		this.dataRef = this.rootRef.child('data');
