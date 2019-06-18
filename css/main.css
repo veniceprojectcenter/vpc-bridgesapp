@@ -1,12 +1,106 @@
-html{
-	width:100%;
-	height:100%;
-}
 body{
 	width:100%;
 	height:100%;
 }
 
+body,p,a,span,div,h1,h2,h3,h4,h5,h6{
+  font-family: 'Gilroy';
+}
+
 slider{
 	margin: 5px;
+}
+
+.dark-mode{
+  background-color: black;
+  color: white
+}
+
+.header-vpc{
+  z-index: 5;
+  display: grid;
+  grid-template-areas: 'how title vpc';
+  padding-bottom: 20px;
+  padding-top: 20px;
+  line-height: 20px;
+}
+
+.my_container h1{
+  color:white;
+  text-align: center;
+  margin-top: 64px;
+}
+
+.text-header-vpc{
+    font-size: 18px;
+    text-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+}
+
+.header-visit-vpc{
+    grid-area: vpc;
+    cursor: pointer;
+    text-decoration: none;
+    text-align: right;
+    margin-right: 15px;
+    color: white;
+}
+
+a.header-visit-vpc:hover{
+   color: orange !important;
+}
+
+.my_link{
+  text-decoration: none;
+  cursor: pointer;
+  color: white;
+}  
+
+.my_link:hover{
+  color: #e5b106;
+} 
+
+.about_modal{
+  position: absolute;
+  z-index: 9999;
+  background-color: rgba(0,0,0,0.7);
+  width: 100%;
+  min-height: 100%;
+  display: none;
+  
+  
+}
+
+.about_modal .container{
+    margin-top: 100px;
+    text-align: center;
+}
+
+.about_modal .image_container {
+  margin: 0 auto;
+}
+
+.about_modal .image_container img{
+  width: 80%;
+}
+
+.close_modal{
+  margin-top: 15px; 
+  font-size: 20px;
+  font-weight: 800;
+  float: right;
+  color: #cc2f0c;
+  margin-right: 15px;
+  border: 3px solid #cc2f0c;
+  border-radius: 10px;
+  min-width: 64px;
+  padding: 5px;
+}
+
+.close_modal:hover{
+  background-color: rgba(63,63,63,0.95);
+}
+
+#map-canvas{
+  width:100%;
+  height: calc(100vh - 61px);
 }
