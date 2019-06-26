@@ -6,7 +6,7 @@ $(document).ready(function(){
         var cookie_policy_url = "https://veniceprojectcenter.org/vpc/cookies";
     }
     if (nibirumail_advice_text === undefined) {    
-        var nibirumail_advice_text = "Venice Project Center uses cookies to offer you a better browsing experience. By using our service you accept the use of cookies in accordance with our cookie policy.<br/><br/><a target=\"_blank\" href=\"" + cookie_policy_url + "\">More informations.</a><br/><br/> <a class=\"nibirumail_agreement\" href=\"javascript:;\">I accept.</a>";
+        var nibirumail_advice_text = "Venice Project Center uses cookies to offer you a better browsing experience. By using our service you accept the use of cookies in accordance with our cookie policy.<br/><br/><a target=\"_blank\" href=\"" + cookie_policy_url + "\">More information</a><br/><br/> <a class=\"nibirumail_agreement\" href=\"javascript:;\">I accept</a>";
     }
 
     function _NibirumailGetStyle(el, prop) {
