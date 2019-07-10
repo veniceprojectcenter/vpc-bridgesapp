@@ -31,10 +31,6 @@
     
     <link rel="stylesheet" type="text/css" href="css/reset.css"/>
     
-    <!-- Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/6.1.1/firebase-app.js"></script>
-    <script type='text/javascript' src='https://www.gstatic.com/firebasejs/6.1.1/firebase-database.js'></script>
-  
     <!-- jquery -->
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
     
@@ -55,9 +51,6 @@
     <!-- angularjs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.7.8/angular.min.js"></script>
     
-    <!-- angular slider -->
-    <link rel="stylesheet" type="text/css" href="css/angular-slider.min.css"/>
-    <script type='text/javascript' src='js/angular-slider.min.js'></script>
     
     <!-- spinner -->
     <script type='text/javascript' src='js/spin.min.js'></script>
@@ -68,176 +61,34 @@
     <link rel="stylesheet" type="text/css" href="css/main.css"/>
     
     <!-- console library -->
+    <script type='text/javascript' src='js/app.js'></script>
+    <script type='text/javascript' src='js/map.js'></script>
     <script type='text/javascript' src='js/ck-console.js'></script>
     <script type='text/javascript' src='js/helper.js'></script>
+    <script type='text/javascript' src='js/controller.js'></script>
     
 
     <script src="js/cookie.js"></script>
     
     <style type="text/css">
-      /* fix for slider conflict with bootstrap */
-      slider span{
-        -webkit-box-sizing: content-box !important;
-        -moz-box-sizing: content-box !important;
-        box-sizing: content-box !important;
-      }
       
       .info {
         padding: 6px 8px;
+        position: absolute;
         font: 14px/16px Arial, Helvetica, sans-serif;
         background: white;
         background: rgba(255,255,255,0.9);
         box-shadow: 0 0 15px rgba(0,0,0,0.2);
         border-radius: 5px;
         width: 320px;
+        bottom: 0;
       }
       .info h4 {
         margin: 0 0 5px;
         color: #777;
       }
     </style>
-    
-    <script type='text/javascript'>
-      var map;
-      var baseLayer;
-      
-      $( document ).ready(function() {
-        map = L.map("map-canvas", {minZoom: 14}).setView([45.436 , 12.334], 14);
-        baseLayer = new L.TileLayer(
-          'https://{s}.tiles.mapbox.com/v3/bennlich.map-8ds9rdrc/{z}/{x}/{y}.png',
-          { attribution: 'Map tiles © MapBox' }
-          ).addTo(map);
-        L.control.scale().addTo(map);
-      });
-      
-      app = angular.module('bridgeapp', ['uiSlider', 'ckServices']);
-      app.controller('DataCtrl', ['$scope', '$compile', 'ckConsole', 'ckConsoleMap', '$http', function($scope, $compile, ckConsole, ckConsoleMap, $http){
-        function updateMarkers(){
-          if($scope.bridgeLayer){
-            $scope.bridgeLayer.eachMember(function(member, marker){
-              if(marker){
-                if(member && member.data){
-                  var data = member.data["Minimum Height (m)"]*100;
-                  if(data>$scope.totalHeight){
-                    marker.setStyle({fillColor: '#00FF00',color: '#00FF00'});
-                  }
-                  else{
-                    marker.setStyle({fillColor: '#FF0000',color: '#FF0000'});
-                  }
-                }
-                else
-                  marker.setStyle({fillOpacity: 0, weight: 0});
-              }
-            });
-          }
-        }
-        $scope.$watch('totalHeight', updateMarkers);
-        $scope.$watchCollection('bridgeLayer.markers', updateMarkers);
 
-        function updateTotal(){
-          $scope.totalHeight = $scope.waterHeight*1 + $scope.boatHeight*1;
-        }
-        
-        $scope.$watch('waterHeight', updateTotal);
-        $scope.$watch('boatHeight', updateTotal);
-        
-        $scope.waterHeight = 60;
-        $scope.boatHeight = 100;
-        $http.get('https://ckdata.herokuapp.com/realtime/venice_tide')
-          .then(function(result) {
-            if(result.status == 200){
-              $scope.waterHeight = parseFloat(result.data.latest_tide_level);
-            }
-          });
-        
-        function createBridgeInfoBox(){
-          var info = L.control();
-          info.onAdd = function (map) {
-            var htmlContent = '<div class="info"><h4>Bridge Information</h4>'+
-              '<div ng-show="hoverData.data"><span ng-repeat="(name, value) in hoverData | displayForm:form" style="display:block" ng-show="value"><span style="font-weight:bold;">{{name}}:</span> {{value}}</span></div>'+
-              '<div ng-hide="hoverData.data">Hover over a bridge to see more information'+
-              '<div><span style="width:40px;height:20px;display:inline-block;vertical-align:middle;background:#00ff00"/><span style="vertical-align:middle;margin-left:2px;">Passable Bridges</span></div>'+
-              '<div><span style="width:40px;height:20px;display:inline-block;vertical-align:middle;background:#ff0000"/><span style="vertical-align:middle;margin-left:2px;">Impassable Bridges</span></div>'+
-              '</div>'+
-              '</div>';
-            $scope.compiled = $compile(htmlContent)($scope);
-            this._content = $scope.compiled[0];
-            return this._content;
-          };
-          return info;
-        }
-        
-        function createHeightSelectorBox(){
-          var info = L.control({position: "bottomright"});
-          info.onAdd = function (map) {
-            var htmlContent = '<div class="info">'+
-              '<p><h4>Total Height: {{totalHeight}} cm</h4></p>'+
-              '<p><h5 style="margin:0px;">Water Height ({{waterHeight}} cm):</h5><slider floor="-50" ceiling="200" step="1" precision="0" ng-model="waterHeight"></slider></p>'+
-              '<p><h5 style="margin:0px;">Boat Height ({{boatHeight}} cm):</h5><slider floor="50" ceiling="400" step="1" precision="0" ng-model="boatHeight"></slider></p>'+
-              '</div>';
-            $scope.compiled = $compile(htmlContent)($scope);
-            this._content = $scope.compiled[0];
-            return this._content;
-          };
-          return info;
-        }
-        /* Displays question mark and vpc logo */
-        function createBrandBox(){
-          var info = L.control({position: "bottomleft"});
-          info.onAdd = function (map) {
-            var htmlContent = '<div class="info" style="width:auto;">'+
-              '<span onclick="showAbout()"><img src="about.png" style="cursor:pointer;padding-right:7px;"></span>'+
-              '<a href="https://veniceprojectcenter.org"><img src="vpc25logo.png"></a>'+
-              '<ul style="margin-top:5px;margin-bottom:0px;">'+
-              '<li><a href="https://canals.veniceprojectcenter.org">Canal Infrastructure App</a></li>'+
-              '<li><a href="https://canals.veniceprojectcenter.org/hydro">Canal Hydrodynamics App</a></li>'+
-              '<li><a href="https://canals.veniceprojectcenter.org/maintenance">Canal Maintenance App</a></li>'+
-              '</ul>'+
-              '</div>';
-            $scope.compiled = $compile(htmlContent)($scope);
-            this._content = $scope.compiled[0];
-            return this._content;
-          };
-          return info;
-        }
-        
-        $scope.showAbout = function (){
-          $('#aboutPanel').show();
-        }
-        $scope.hideAbout = function (){
-          $('#aboutPanel').hide();
-        }
-        
-        $( document ).ready(function() {
-          createBridgeInfoBox().addTo(map);
-          createHeightSelectorBox().addTo(map);
-          createBrandBox().addTo(map);
-          $('#aboutPanel').hide();
-
-          $('#spinner').spin('large', '#fff');
-          
-          ckConsole.getForm('9c2102ab-e8e2-e500-b72f-49aeb4f06c1a').then(function(form){
-            $scope.form = form;
-          });
-          ckConsoleMap.createMapLayerFromGroupData(map, ckConsole.getGroup('MERGE Ponti'), function(bridgeLayer){
-            bridgeLayer.show();
-            bridgeLayer.setStyle({fillColor: '#0000FF',color: '#0000FF',
-              fillOpacity: 1.0, weight: 15, opacity: 1.0});
-            bridgeLayer.on('mouseover', function(e, data, marker){$scope.$apply(function(){
-              $scope.hoverData = data;
-            });});
-            bridgeLayer.on('mouseout', function(e, data, marker){$scope.$apply(function(){
-              if($scope.hoverData == data)
-                $scope.hoverData = null;
-            });});
-            $scope.bridgeLayer = bridgeLayer;
-          }).then(function(bridgeLayer){
-            $('#loadingPanel').hide();
-            $('#spinner').spin(false);
-          });
-        });
-      }]);
-    </script>
 
   <script type="text/javascript">
 
@@ -256,9 +107,8 @@
 
   </script>
 
-
   </head>
-  <body ng-controller="DataCtrl">
+  <body ng-controller="DataCtrl as ctl">
     <div class="about_modal">
       <span class="close_modal">CLOSE</span>
       <div class="my_container" style="margin: 10px; font-size:18px;">
@@ -298,7 +148,33 @@
       </a>
     </div>
 
-    <div id="map-canvas"></div>      
+    <div id="map" ng-init="ctl.init_map()"></div>    
+    <div class="info my_sliders" style="z-index: 999;">
+      <p><h4>Total Height: {{totalHeight}} cm</h4></p>
+      <p><h5 style="margin:0px;">Water Height ({{ctl.waterHeight}} cm):</h5>
+        <input style="width: 100%;" type="range" min="-60" max="200" step="1" precision="0" ng-model="ctl.waterHeight" ng-model-options="{ debounce: 500 }" ng-change="ctl.changeHeight()" />
+      </p>
+      <p><h5 style="margin:0px;">Boat Height ({{ctl.boatHeight}} cm):</h5>
+        <input style="width: 100%;" type="range" min="50" max="400" step="1" precision="0" ng-model="ctl.boatHeight" ng-model-options="{ debounce: 500 }" ng-change="ctl.changeHeight()" />
+      </p>
+    </div>  
+
+    <div class="info my_over" style="top:61px;right:0;height: 100px; z-index: 9999;"><h4>Bridge Information</h4>
+      <div ng-if="ctl.hoverData.length > 0" ng-repeat="data in ctl.hoverData">
+        <span style="display:block">
+          <span style="font-weight:bold;">{{data.name}}:</span> {{data.value}}</span>
+      </div>
+      <div ng-if="!ctl.hoverData">
+        Hover over a bridge to see more information
+      <div>
+        <span style="width:40px;height:20px;display:inline-block;vertical-align:middle;background:#00ff00"></span>
+        <span style="vertical-align:middle;margin-left:2px;">Passable Bridges</span>
+      </div>
+      <div>
+        <span style="width:40px;height:20px;display:inline-block;vertical-align:middle;background:#ff0000"></span>
+        <span style="vertical-align:middle;margin-left:2px;">Impassable Bridges</span></div>
+      </div>
+    </div>
     <div style="position:absolute;top:0px;left:0px;width:100%;height:100%;z-index:2000;background-color:rgba(0,0,0,0.5);" id="loadingPanel">
       <div style="margin-left:auto;margin-right:auto;text-align:center;margin-top:50px;" id="loadingText"><h3 style="color:white;">Loading...</h3></div>
       <div style="position:absolute;left:50%;top:50%;" id="spinner"></div>

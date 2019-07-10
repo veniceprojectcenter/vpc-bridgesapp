@@ -107,7 +107,7 @@ a.header-visit-vpc:hover{
   background-color: rgba(63,63,63,0.95);
 }
 
-#map-canvas{
+#map{
   width:100%;
   height: calc(100vh - 61px);
 }
