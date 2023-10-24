@@ -6,3 +6,5 @@ This application uses [CKdata](https://ckdata.herokuapp.com/) to get the data it
 the app is written in js and is static. it is deployed on [vercel](https://vercel.com/vpcprojects/bridges).
 
 it tries to get the recent tide height value from [here](https://ckdata.herokuapp.com/realtime/venice_tide) but it seems like the api is not working
+
+it also gets the bridge information from "MERGE Ponti" data group in ckdata
